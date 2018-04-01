@@ -1,20 +1,85 @@
 #!/usr/bin/env python3
 
+import pygame
 import sys
+
+PIXEL_WIDTH = 20
+PIXEL_HEIGHT =20
+PIXEL_X_COUNT = 64
+PIXEL_Y_COUNT = 32
+WINDOW_WIDTH = PIXEL_X_COUNT * PIXEL_WIDTH
+WINDOW_HEIGHT = PIXEL_Y_COUNT * PIXEL_HEIGHT
+
+BG_COLOR = (0, 0, 0)
+PIXEL_COLOR = (255, 255, 255)
 
 class Display:
     def __init__(self):
-        pixels = []
+        self.ROW_COUNT = 32
+        self.COL_COUNT = 64
+        self.pixels = [[0 for y in range(self.ROW_COUNT)] for x in range(self.COL_COUNT)]
+
+        self.display_surf = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pygame.display.set_caption('CHIP8')
+
+        self._update()
+
+    def _update(self):
+        self.display_surf.fill(BG_COLOR)
+
+        for p_x in range(self.COL_COUNT):
+            for p_y in range(self.ROW_COUNT):
+                if self.pixels[p_x][p_y] == 1:
+                    d_x = PIXEL_WIDTH * p_x
+                    d_y = PIXEL_HEIGHT * p_y
+                    pygame.draw.rect(self.display_surf, PIXEL_COLOR, 
+                                     (d_x, d_y, PIXEL_WIDTH, PIXEL_HEIGHT))
+        pygame.display.flip()
 
     def clear(self):
-        print('Clear display')
+        for i in range(self.COL_COUNT):
+            for j in range(self.ROW_COUNT):
+                self.pixels[i][j] = 0
 
-    def draw_sprite(self, x, y, n):
-        print('Draw sprite')
-        return 0
+        self._update()
+
+    def draw_sprite(self, start_x, start_y, n):
+        is_collission_detected = False
+        sprite_data = memory[i_register:i_register + n + 1]
+        sprite_width = 8
+        sprite_height = n
+
+        for s_x in range(sprite_width):
+            for s_y in range(sprite_height):
+                bit = (sprite_data[s_y] >> (7 - s_x)) & 1
+                p_x = (start_x + s_x) % self.COL_COUNT
+                p_y = (start_y + s_y) % self.ROW_COUNT
+                self.pixels[p_x][p_y] ^= bit
+                if bit == 1 and self.pixels[p_x][p_y] == 0:
+                    is_collission_detected = True
+
+        self._update()
+
+        return is_collission_detected
 
 def load_font():
-    print('todo: load font data into memory')
+    font_data = bytes.fromhex('F0909090F0' + # 0
+                              '2060202070' + # 1
+                              'F010F080F0' + # 2
+                              'F010F010F0' + # 3
+                              '9090F01010' + # 4
+                              'F080F010F0' + # 5
+                              'F080F090F0' + # 6
+                              'F010204040' + # 7
+                              'F090F090F0' + # 8
+                              'F090F010F0' + # 9
+                              'F090F09090' + # 10
+                              'E090E090E0' + # 11
+                              'F0808080F0' + # 12
+                              'E0909090E0' + # 13
+                              'F080F080F0' + # 14
+                              'F080F08080')  # 15
+    memory[0:81] = font_data
 
 def load_rom(rom_path):
     with open(rom_path, 'rb') as rom:
@@ -57,13 +122,13 @@ def exec_instr(opcode):
     elif opcode[0] == '6':
         registers[x] = kk
     elif opcode[0] == '7':
-        registers[x] = registers[x] + kk
+        registers[x] += kk
     elif opcode[0] == '8' and opcode[3] == '2':
-        registers[x] = registers[x] & registers[y]
+        registers[x] &= registers[y]
     elif opcode[0] == 'a':
         i_register = nnn
     elif opcode[0] == 'd':
-        registers[15] = display.draw_sprite(x, y, n)
+        registers[15] = display.draw_sprite(registers[x],registers[y], n)
     elif opcode[0] == 'f' and opcode[2:] == '1e':
         i_register = i_register + registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '29':
@@ -78,7 +143,10 @@ def exec_instr(opcode):
             registers[reg_index] = memory[mem_index + reg_index]
     else:
         print('Opcode ', opcode, ' not supported')
+        _ = input()
         exit()
+
+pygame.init()
 
 display = Display()
 
