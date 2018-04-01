@@ -183,6 +183,14 @@ def exec_instr(opcode):
         else:
             registers[15] = 0
         registers[x] = val
+    elif opcode[0] == '8' and opcode[3] == '5':
+        val = registers[x] - registers[y]
+        if registers[x] > registers[y]:
+            registers[15] = 1
+        else:
+            registers[15] = 0
+            val += 256
+        registers[x] = val
     elif opcode[0] == '9' and opcode[3] == '0':
         if registers[x] != registers[y]:
             pc += 2
@@ -198,6 +206,8 @@ def exec_instr(opcode):
     elif opcode[0] == 'e' and opcode[2:] == 'a1':
         if not pygame.key.get_pressed()[KEY_MAPPINGS[registers[x]]]:
             pc += 2
+    elif opcode[0] == 'f' and opcode[2:] == '07':
+        registers[x] = delay_timer.value
     elif opcode[0] == 'f' and opcode[2:] == '15':
         delay_timer.value = registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '18':
