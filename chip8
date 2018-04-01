@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
 import pygame
+import random
 import sys
+
+from pygame.locals import *
 
 PIXEL_WIDTH = 20
 PIXEL_HEIGHT =20
@@ -12,6 +15,23 @@ WINDOW_HEIGHT = PIXEL_Y_COUNT * PIXEL_HEIGHT
 
 BG_COLOR = (0, 0, 0)
 PIXEL_COLOR = (255, 255, 255)
+
+KEY_MAPPINGS = [K_x,
+                K_1,
+                K_2,
+                K_3,
+                K_q,
+                K_w,
+                K_e,
+                K_a,
+                K_s,
+                K_d,
+                K_z,
+                K_c,
+                K_4,
+                K_r,
+                K_f,
+                K_v]
 
 class Display:
     def __init__(self):
@@ -123,16 +143,44 @@ def exec_instr(opcode):
         registers[x] = kk
     elif opcode[0] == '7':
         registers[x] += kk
+    elif opcode[0] == '8' and opcode[3] == '0':
+        registers[x] = registers[y]
     elif opcode[0] == '8' and opcode[3] == '2':
         registers[x] &= registers[y]
+    elif opcode[0] == '8' and opcode[3] == '4':
+        val = registers[x] + registers[y]
+        if val > 255:
+            val -= 256
+            registers[15] = 1
+        else:
+            registers[15] = 0
+        registers[x] = val
+    elif opcode[0] == '9' and opcode[3] == '0':
+        if registers[x] != registers[y]:
+            pc += 2
     elif opcode[0] == 'a':
         i_register = nnn
+    elif opcode[0] == 'c':
+        registers[x] = random.randint(0, 255) & kk
     elif opcode[0] == 'd':
         registers[15] = display.draw_sprite(registers[x],registers[y], n)
+    elif opcode[0] == 'e' and opcode[2:] == '9e':
+        if pygame.key.get_pressed()[KEY_MAPPINGS[registers[x]]]:
+            pc += 2
+    elif opcode[0] == 'e' and opcode[2:] == 'a1':
+        if not pygame.key.get_pressed()[KEY_MAPPINGS[registers[x]]]:
+            pc += 2
     elif opcode[0] == 'f' and opcode[2:] == '1e':
         i_register = i_register + registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '29':
         i_register = registers[x] * 5
+    elif opcode[0] == 'f' and opcode[2:] == '33':
+        hundreds = (registers[x] % 1000) // 100
+        tens = (registers[x] % 100) // 10
+        ones = registers[x] % 10
+        memory[i_register] = hundreds
+        memory[i_register + 1] = tens
+        memory[i_register + 2] = ones
     elif opcode[0] == 'f' and opcode[2:] == '55':
         mem_index = i_register
         for reg_index in range(x + 1):
@@ -161,5 +209,6 @@ rom_path = sys.argv[1]
 load_rom(rom_path)
 
 while True:
+    pygame.event.pump()
     opcode = fetch_opcode()
     exec_instr(opcode)
