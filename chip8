@@ -2,11 +2,19 @@
 
 import sys
 
-registers = [0 for i in range(16)]
-i_register = 0
-pc = 512
-memory = bytearray(4096)
-stack = []
+class Display:
+    def __init__(self):
+        pixels = []
+
+    def clear(self):
+        print('Clear display')
+
+    def draw_sprite(self, x, y, n):
+        print('Draw sprite')
+        return 0
+
+def load_font():
+    print('todo: load font data into memory')
 
 def load_rom(rom_path):
     with open(rom_path, 'rb') as rom:
@@ -22,9 +30,65 @@ def fetch_opcode():
     return memory[pc:pc+2].hex()
 
 def exec_instr(opcode):
-    global pc
+    global pc, i_register
     pc += 2
 
+    nnn = int(opcode[1:], 16)
+    n = int(opcode[3], 16)
+    x = int(opcode[1], 16)
+    y = int(opcode[2], 16)
+    kk = int(opcode[2:], 16)
+
+    if opcode == '00e0':
+        display.clear()
+    elif opcode == '00ee':
+        pc = stack.pop()
+    elif opcode[0] == '1':
+        pc = nnn
+    elif opcode[0] == '2':
+        stack.append(pc)
+        pc = nnn
+    elif opcode[0] == '3':
+        if registers[x] == kk:
+            pc += 2
+    elif opcode[0] == '4':
+        if registers[x] != kk:
+            pc += 2
+    elif opcode[0] == '6':
+        registers[x] = kk
+    elif opcode[0] == '7':
+        registers[x] = registers[x] + kk
+    elif opcode[0] == '8' and opcode[3] == '2':
+        registers[x] = registers[x] & registers[y]
+    elif opcode[0] == 'a':
+        i_register = nnn
+    elif opcode[0] == 'd':
+        registers[15] = display.draw_sprite(x, y, n)
+    elif opcode[0] == 'f' and opcode[2:] == '1e':
+        i_register = i_register + registers[x]
+    elif opcode[0] == 'f' and opcode[2:] == '29':
+        i_register = registers[x] * 5
+    elif opcode[0] == 'f' and opcode[2:] == '55':
+        mem_index = i_register
+        for reg_index in range(x + 1):
+            memory[mem_index + reg_index] = registers[reg_index]
+    elif opcode[0] == 'f' and opcode[2:] == '65':
+        mem_index = i_register
+        for reg_index in range(x + 1):
+            registers[reg_index] = memory[mem_index + reg_index]
+    else:
+        print('Opcode ', opcode, ' not supported')
+        exit()
+
+display = Display()
+
+registers = [0 for i in range(16)]
+i_register = 0
+pc = 512
+memory = bytearray(4096)
+stack = []
+
+load_font()
 rom_path = sys.argv[1]
 load_rom(rom_path)
 
