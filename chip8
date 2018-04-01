@@ -3,6 +3,7 @@
 import pygame
 import random
 import sys
+import time
 
 from pygame.locals import *
 
@@ -81,6 +82,19 @@ class Display:
         self._update()
 
         return is_collission_detected
+
+class Sound_Timer:
+    def __init__(self):
+        self.TICKS_PER_SEC = 1 / 60
+        self.value = 0
+        self.last_tick_time = time.time()
+
+    def process(self):
+        if self.value != 0:
+            print('beep')
+            if time.time() - self.last_tick_time > self.TICKS_PER_SEC:
+                self.value -= 1
+                self.last_tick_time = time.time()
 
 def load_font():
     font_data = bytes.fromhex('F0909090F0' + # 0
@@ -170,6 +184,8 @@ def exec_instr(opcode):
     elif opcode[0] == 'e' and opcode[2:] == 'a1':
         if not pygame.key.get_pressed()[KEY_MAPPINGS[registers[x]]]:
             pc += 2
+    elif opcode[0] == 'f' and opcode[2:] == '18':
+        sound_timer.value = registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '1e':
         i_register = i_register + registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '29':
@@ -197,6 +213,7 @@ def exec_instr(opcode):
 pygame.init()
 
 display = Display()
+sound_timer = Sound_Timer()
 
 registers = [0 for i in range(16)]
 i_register = 0
@@ -210,5 +227,6 @@ load_rom(rom_path)
 
 while True:
     pygame.event.pump()
+    sound_timer.process()
     opcode = fetch_opcode()
     exec_instr(opcode)
