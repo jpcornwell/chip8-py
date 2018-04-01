@@ -17,6 +17,8 @@ WINDOW_HEIGHT = PIXEL_Y_COUNT * PIXEL_HEIGHT
 BG_COLOR = (0, 0, 0)
 PIXEL_COLOR = (255, 255, 255)
 
+CYCLES_PER_SEC = 500
+
 KEY_MAPPINGS = [K_x,
                 K_1,
                 K_2,
@@ -211,6 +213,7 @@ def exec_instr(opcode):
         exit()
 
 pygame.init()
+cycle_clock = pygame.time.Clock()
 
 display = Display()
 sound_timer = Sound_Timer()
@@ -230,3 +233,4 @@ while True:
     sound_timer.process()
     opcode = fetch_opcode()
     exec_instr(opcode)
+    cycle_clock.tick(CYCLES_PER_SEC)
