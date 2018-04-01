@@ -17,7 +17,7 @@ WINDOW_HEIGHT = PIXEL_Y_COUNT * PIXEL_HEIGHT
 BG_COLOR = (0, 0, 0)
 PIXEL_COLOR = (255, 255, 255)
 
-CYCLES_PER_SEC = 500
+CYCLES_PER_SEC = 1000
 
 KEY_MAPPINGS = [K_x,
                 K_1,
@@ -94,6 +94,18 @@ class Sound_Timer:
     def process(self):
         if self.value != 0:
             print('beep')
+            if time.time() - self.last_tick_time > self.TICKS_PER_SEC:
+                self.value -= 1
+                self.last_tick_time = time.time()
+
+class Delay_Timer:
+    def __init__(self):
+        self.TICKS_PER_SEC = 1 / 60
+        self.value = 0
+        self.last_tick_time = time.time()
+
+    def process(self):
+        if self.value != 0:
             if time.time() - self.last_tick_time > self.TICKS_PER_SEC:
                 self.value -= 1
                 self.last_tick_time = time.time()
@@ -186,10 +198,12 @@ def exec_instr(opcode):
     elif opcode[0] == 'e' and opcode[2:] == 'a1':
         if not pygame.key.get_pressed()[KEY_MAPPINGS[registers[x]]]:
             pc += 2
+    elif opcode[0] == 'f' and opcode[2:] == '15':
+        delay_timer.value = registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '18':
         sound_timer.value = registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '1e':
-        i_register = i_register + registers[x]
+        i_register += registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '29':
         i_register = registers[x] * 5
     elif opcode[0] == 'f' and opcode[2:] == '33':
@@ -216,6 +230,7 @@ pygame.init()
 cycle_clock = pygame.time.Clock()
 
 display = Display()
+delay_timer = Delay_Timer()
 sound_timer = Sound_Timer()
 
 registers = [0 for i in range(16)]
@@ -230,6 +245,7 @@ load_rom(rom_path)
 
 while True:
     pygame.event.pump()
+    delay_timer.process()
     sound_timer.process()
     opcode = fetch_opcode()
     exec_instr(opcode)
