@@ -170,7 +170,7 @@ def exec_instr(opcode):
     elif opcode[0] == '6':
         registers[x] = kk
     elif opcode[0] == '7':
-        registers[x] += kk
+        registers[x] = (registers[x] + kk) % 256
     elif opcode[0] == '8' and opcode[3] == '0':
         registers[x] = registers[y]
     elif opcode[0] == '8' and opcode[3] == '2':
