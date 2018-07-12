@@ -137,9 +137,6 @@ def load_rom(rom_path):
             i += 1
 
 def fetch_opcode():
-    # program counter should always be on an even address
-    assert(pc % 2 == 0)
-
     return memory[pc:pc+2].hex()
 
 def exec_instr(opcode):
@@ -232,7 +229,11 @@ def exec_instr(opcode):
     elif opcode[0] == 'f' and opcode[2:] == '07':
         registers[x] = delay_timer.value
     elif opcode[0] == 'f' and opcode[2:] == '0a':
-        print('todo: implement FX0A')
+        pressed = pygame.key.get_pressed()
+        for i in range(16):
+            if pressed[KEY_MAPPINGS[i]]:
+                registers[x] = i
+                break
     elif opcode[0] == 'f' and opcode[2:] == '15':
         delay_timer.value = registers[x]
     elif opcode[0] == 'f' and opcode[2:] == '18':
@@ -252,10 +253,12 @@ def exec_instr(opcode):
         mem_index = i_register
         for reg_index in range(x + 1):
             memory[mem_index + reg_index] = registers[reg_index]
+        i_register = i_register + x + 1
     elif opcode[0] == 'f' and opcode[2:] == '65':
         mem_index = i_register
         for reg_index in range(x + 1):
             registers[reg_index] = memory[mem_index + reg_index]
+        i_register = i_register + x + 1
     else:
         print('Opcode ', opcode, ' not supported')
         _ = input()
